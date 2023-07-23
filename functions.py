@@ -1,6 +1,6 @@
-import tkinter as tk
+import settings
 import numpy as np
-import settings as s
+import random
 
 
 def draw_coordinate_system(canvas, origin_x, origin_y, window_width, window_height, scale):
@@ -25,6 +25,20 @@ def draw_coordinate_system(canvas, origin_x, origin_y, window_width, window_heig
             canvas.create_text(y_half+10, y, text=str(i//scale), fill="black")  # Label
 
 
+def add_point(x, y):
+    from main import points, g
+    global g
+    global points
+    scaled_x = (x - settings.origin_x) / settings.scale
+    scaled_y = -(y - settings.origin_y) / settings.scale
+    points = np.vstack((points, np.array([scaled_x, scaled_y])))
+    random_x, random_y = random.randint(0, settings.window_width), random.randint(0, settings.window_height)
+    g.canvas.create_oval(x, y, x, y, width=5, fill='black')
+    g.canvas.create_oval(random_x, random_y, random_x, random_y, width=5, outline="red")
+    scaled_random_x, scaled_random_y = (random_x - settings.origin_x) / settings.scale, -(
+    random_y - settings.origin_y) / settings.scale
+    points = np.vstack((points, np.array([scaled_random_x, scaled_random_y])))
+    print(points)
 
 
 

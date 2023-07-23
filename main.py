@@ -16,20 +16,10 @@ class Game:
 
 def on_click(event):
     x, y = event.x, event.y
-    scaled_x = (x -settings.origin_x) /settings.scale
-    scaled_y = -(y -settings.origin_y) /settings.scale
-    global points
-    points = np.vstack((points, np.array([scaled_x, scaled_y])))
-    random_x, random_y = random.randint(0,settings.window_width), random.randint(0,settings.window_height)
-    g.canvas.create_oval(x, y, x, y, width=5, fill='black')
-    g.canvas.create_oval(random_x, random_y, random_x, random_y, width=5, outline="red")
-    scaled_random_x, scaled_random_y = (random_x -settings.origin_x) /settings.scale, -(random_y -settings.origin_y) /settings.scale
-    points = np.vstack((points, np.array([scaled_random_x, scaled_random_y])))
-    print(points)
+    functions.add_point(x, y)
 
 
 def reset_game():
-    global g
     g.canvas.delete("all")
     g.points = np.empty(shape=(1, 2))
     functions.draw_coordinate_system(g.canvas, settings.origin_x, settings.origin_y, settings.window_width, settings.window_height, settings.scale)
