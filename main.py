@@ -3,7 +3,7 @@ import numpy as np
 import menu
 import functions
 import random
-import settings as s
+import settings
 
 points = np.empty(shape=(1, 2))
 
@@ -16,42 +16,44 @@ class Game:
 
 def on_click(event):
     x, y = event.x, event.y
-    scaled_x = (x - s.origin_x) / s.scale
-    scaled_y = -(y - s.origin_y) / s.scale
+    scaled_x = (x -settings.origin_x) /settings.scale
+    scaled_y = -(y -settings.origin_y) /settings.scale
     global points
     points = np.vstack((points, np.array([scaled_x, scaled_y])))
-    random_x, random_y = random.randint(0, s.window_width), random.randint(0, s.window_height)
+    random_x, random_y = random.randint(0,settings.window_width), random.randint(0,settings.window_height)
     g.canvas.create_oval(x, y, x, y, width=5, fill='black')
     g.canvas.create_oval(random_x, random_y, random_x, random_y, width=5, outline="red")
-    scaled_random_x, scaled_random_y = (random_x - s.origin_x) / s.scale, -(random_y - s.origin_y) / s.scale
+    scaled_random_x, scaled_random_y = (random_x -settings.origin_x) /settings.scale, -(random_y -settings.origin_y) /settings.scale
     points = np.vstack((points, np.array([scaled_random_x, scaled_random_y])))
     print(points)
 
 
-def reset_game(g):
+def reset_game():
+    global g
     g.canvas.delete("all")
     g.points = np.empty(shape=(1, 2))
-    functions.draw_coordinate_system(g.canvas, s.origin_x, s.origin_y, s.window_width, s.window_height, s.scale)
+    functions.draw_coordinate_system(g.canvas, settings.origin_x, settings.origin_y, settings.window_width, settings.window_height, settings.scale)
 
 
-# Create the main window
-root = tk.Tk()
-root.title("Clustering game")
+if __name__ == "__main__":
+    # Create the main window
+    root = tk.Tk()
+    root.title("Clustering game")
 
-# Set the size of the window
-root.geometry(f"{s.window_width}x{s.window_height}")
+    # Set the size of the window
+    root.geometry(f"{settings.window_width}x{settings.window_height}")
 
-# Create the Menu
-menu.create_menu(root)
+    # Create the Menu
+    menu.create_menu(root)
 
-# Create a canvas widget to draw on
-g = Game(points, tk.Canvas(root, width=s.window_width, height=s.window_height, bg="white"))
-g.canvas.pack()
-root.config(menu=functions.draw_coordinate_system(g.canvas, s.origin_x, s.origin_y, s.window_width, s.window_height, s.scale))
+    # Create a canvas widget to draw on
+    g = Game(points, tk.Canvas(root, width=settings.window_width, height=settings.window_height, bg="white"))
+    g.canvas.pack()
+    root.config(menu=functions.draw_coordinate_system(g.canvas, settings.origin_x, settings.origin_y, settings.window_width, settings.window_height,settings.scale))
 
 
-# Bind the click event to the canvas
-g.canvas.bind("<Button-1>", on_click)
+    # Bind the click event to the canvas
+    g.canvas.bind("<Button-1>", on_click)
 
-# Start the Tkinter main loop
-root.mainloop()
+    # Start the Tkinter main loop
+    root.mainloop()

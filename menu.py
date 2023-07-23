@@ -6,6 +6,7 @@ def p():
 
 
 def create_menu(root):
+    from main import reset_game
     # Create menu bar
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
@@ -23,7 +24,7 @@ def create_menu(root):
     menu_bar.add_cascade(label="Options", menu=game_options)
 
     # Options in option menu
-    game_options.add_command(label="Reset Game", command=p)
+    game_options.add_command(label="Reset Game", command=reset_game)
 
     return menu_bar
 
