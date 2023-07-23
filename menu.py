@@ -1,28 +1,31 @@
 import tkinter as tk
-import functions
+
+
 def p():
     print('does it print')
 
+
 def create_menu(root):
-    #Create menu bar
+    # Create menu bar
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
 
-    #Create algorithm menu
+    # Create algorithm menu
     algorithm_menu = tk.Menu(menu_bar, tearoff=0)
     menu_bar.add_cascade(label="Algorithm", menu=algorithm_menu)
 
-    #Options in algorith menu
+    # Options in algorith menu
     algorithm_menu.add_radiobutton(label="X-Means")
     algorithm_menu.add_radiobutton(label="DBSCAN")
 
-    #Create game options
+    # Create game options
     game_options = tk.Menu(menu_bar, tearoff=0)
     menu_bar.add_cascade(label="Options", menu=game_options)
 
-    #Options in option menu
-    game_options.add_command(label="Reset Game", command=functions.reset_game)
+    # Options in option menu
+    game_options.add_command(label="Reset Game", command=p)
 
-    root.config(menu=menu_bar)
+    return menu_bar
+
 
 
