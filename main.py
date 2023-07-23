@@ -6,24 +6,72 @@ import random
 import settings
 
 
-class Game:
-    def __init__(self, canvas):
-        self.canvas = canvas
-        self.points = np.empty(shape=(1, 2))
+class GameWindow:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Clustering Game")
+        self.root.geometry(f"{settings.window_width}x{settings.window_height}")
+        self.canvas = tk.Canvas(self.root, width=settings.window_width,
+                                height=settings.window_height, bg="white")
         self.canvas.pack()
 
-    def start_game(self):
+    def get_canvas(self):
+        return self.canvas
+
+    def create_menu(self, game):
+        # Create menu bar
+        menu_bar = tk.Menu(self.root)
+        self.root.config(menu=menu_bar)
+
+        # Create algorithm menu
+        algorithm_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Algorithm", menu=algorithm_menu)
+
+        # Options in algorith menu
+        algorithm_menu.add_radiobutton(label="X-Means")
+        algorithm_menu.add_radiobutton(label="DBSCAN")
+
+        # Create game options
+        game_options = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Options", menu=game_options)
+
+        # Options in option menu
+        game_options.add_command(label="Reset Game", command=game.reset_game)
+
+        return menu_bar
+
+
+class Renderer:
+
+    def __init__(self, canvas):
+        self.canvas = canvas
+
+    def draw_coordinate_system(self):
         functions.draw_coordinate_system(self.canvas, settings.origin_x, settings.origin_y,
                                          settings.window_width, settings.window_height, settings.scale)
 
+    def draw_point(self, x, y, color):
+        functions.draw_point(self.canvas, x, y, color=color)
+
+    def clear(self):
+        self.canvas.delete("all")
+
+
+class Game:
+    def __init__(self, renderer):
+        self.points = np.empty(shape=(1, 2))
+        self.renderer = renderer
+
+    def start_game(self):
+        self.renderer.draw_coordinate_system()
+
     def player_turn(self, x, y):
-        # check whether exists already or not.
         self.add_point(x, y)
-        functions.draw_point(self.canvas, x, y, color="black")
+        self.renderer.draw_point(x, y, color="black")
         randomX, randomY = random.randint(
             0, settings.window_width), random.randint(0, settings.window_height)
         self.add_point(randomX, randomY)
-        functions.draw_point(self.canvas, randomX, randomY, color="red")
+        self.renderer.draw_point(randomX, randomY, color="red")
 
     def add_point(self, x, y):
         scaled_x = (x - settings.origin_x) / settings.scale
@@ -31,39 +79,33 @@ class Game:
         self.points = np.vstack((self.points, np.array([scaled_x, scaled_y])))
 
     def reset_game(self):
-        self.canvas.delete("all")
         self.points = np.empty(shape=(1, 2))
-        functions.draw_coordinate_system(self.canvas, settings.origin_x, settings.origin_y,
-                                         settings.window_width, settings.window_height, settings.scale)
+        self.renderer.clear()
+        self.renderer.draw_coordinate_system()
 
 
-def on_click(event):
-    x, y = event.x, event.y
-    g.player_turn(x, y)
+def main():
+    window = GameWindow()
+
+    canvas = window.get_canvas()
+
+    renderer = Renderer(canvas)
+    game = Game(renderer)
+
+    # Bind the click event to the canvas
+    def on_click(event):
+        x, y = event.x, event.y
+        game.player_turn(x, y)
+
+    canvas.bind("<Button-1>", on_click)
+
+    window.create_menu(game)
+
+    game.start_game()
+
+    # Start the Tkinter main loop
+    window.root.mainloop()
 
 
 if __name__ == "__main__":
-    # Create the main window
-    root = tk.Tk()
-    root.title("Clustering game")
-
-    # Set the size of the window
-    root.geometry(f"{settings.window_width}x{settings.window_height}")
-
-    # Create a canvas widget to draw on
-    canvas = tk.Canvas(root, width=settings.window_width,
-                       height=settings.window_height, bg="white")
-
-    # Bind the click event to the canvas
-    canvas.bind("<Button-1>", on_click)
-
-    g = Game(canvas)
-
-    # Create the Menu
-    menu_bar = menu.create_menu(root, g)
-    root.config(menu=menu_bar)
-
-    g.start_game()
-
-    # Start the Tkinter main loop
-    root.mainloop()
+    main()
