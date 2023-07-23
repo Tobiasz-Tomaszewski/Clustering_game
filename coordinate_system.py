@@ -1,3 +1,6 @@
+import tkinter as tk
+
+
 def draw_coordinate_sys(canvas, origin_x, origin_y, window_width, window_height, scale):
     # Draw x and y axes
     canvas.create_line(0, origin_y, window_width, origin_y, fill="black")  # x-axis

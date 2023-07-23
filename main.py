@@ -6,6 +6,7 @@ import random
 
 points = np.empty(shape=(1, 2))
 
+
 def on_click(event):
     x, y = event.x, event.y
     scaled_x = (x - origin_x) / scale
@@ -19,9 +20,13 @@ def on_click(event):
     points = np.vstack((points, np.array([scaled_random_x, scaled_random_y])))
     print(points)
 
-def right_click(event):
+
+def reset_game():
     canvas.delete("all")
+    global points
+    points = np.empty(shape=(1, 2))
     coordinate_system.draw_coordinate_sys(canvas, origin_x, origin_y, window_width, window_height, scale)
+
 
 # Create the main window
 root = tk.Tk()
@@ -46,7 +51,6 @@ coordinate_system.draw_coordinate_sys(canvas, origin_x, origin_y, window_width, 
 
 # Bind the click event to the canvas
 canvas.bind("<Button-1>", on_click)
-canvas.bind("<Button-3>", right_click)
 
 # Start the Tkinter main loop
 root.mainloop()
