@@ -1,5 +1,6 @@
 import tkinter as tk
-
+import numpy as np
+import settings as s
 
 def draw_coordinate_sys(canvas, origin_x, origin_y, window_width, window_height, scale):
     # Draw x and y axes
@@ -22,3 +23,10 @@ def draw_coordinate_sys(canvas, origin_x, origin_y, window_width, window_height,
         if not y == origin_y:
             canvas.create_text(y_half+10, y, text=str(i//scale), fill="black")  # Label
 
+
+def reset_game():
+    from main import canvas
+    canvas.delete("all")
+    global points
+    points = np.empty(shape=(1, 2))
+    draw_coordinate_sys(canvas, s.origin_x, s.origin_y, s.window_width, s.window_height, s.scale)

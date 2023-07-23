@@ -1,7 +1,9 @@
 import tkinter as tk
+import functions
+def p():
+    print('does it print')
 
 def create_menu(root):
-    import main
     #Create menu bar
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
@@ -19,7 +21,7 @@ def create_menu(root):
     menu_bar.add_cascade(label="Options", menu=game_options)
 
     #Options in option menu
-    game_options.add_command(label="Reset Game", command=print('does_it_orint'))
+    game_options.add_command(label="Reset Game", command=functions.reset_game)
 
     root.config(menu=menu_bar)
 
