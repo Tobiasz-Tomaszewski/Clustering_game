@@ -23,6 +23,14 @@ root.title("Clickable Coordinate System")
 window_width, window_height = 400, 400
 root.geometry(f"{window_width}x{window_height}")
 
+#Create the Menu
+menuBar = tk.Menu(root)
+submenu = tk.Menu(root)
+menuBar.add_cascade(label="Options", menu=submenu)
+submenu.add_radiobutton(label="Option 1")
+submenu.add_radiobutton(label="Option 2")
+root.config(menu=menuBar)
+
 # Set up the coordinate system parameters
 origin_x, origin_y = window_width // 2, window_height // 2  # Center of the window
 scale = 20  # 1 unit = 20 pixels
