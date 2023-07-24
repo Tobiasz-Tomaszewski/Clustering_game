@@ -1,9 +1,22 @@
 import tkinter as tk
 import numpy as np
-import menu
 import functions
 import random
 import settings
+from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
+
+
+class ModelXMeans:
+    def __init__(self, data,nr_cluster_init):
+        self.data = data
+        self.initial_number_of_clusters = nr_cluster_init
+        self.initial_centers = None
+
+    def initialize_centers(self):
+        self.initial_centers = kmeans_plusplus_initializer(self.data, self.initial_number_of_clusters).initialize()
+
+    def get_clusters(self):
+        pass
 
 
 class GameWindow:
