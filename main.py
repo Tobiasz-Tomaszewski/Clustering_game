@@ -7,13 +7,36 @@ from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 
 
 class ModelXMeans:
-    def __init__(self, data,nr_cluster_init):
+    def __init__(self, data, nr_cluster_init, renderer):
         self.data = data
         self.initial_number_of_clusters = nr_cluster_init
         self.initial_centers = None
+        self.renderer = renderer
+        self.clusters = None
 
     def initialize_centers(self):
         self.initial_centers = kmeans_plusplus_initializer(self.data, self.initial_number_of_clusters).initialize()
+
+    def perform_algorithm(self):
+        pass
+
+    def get_clusters(self):
+        pass
+        l = []
+        for c in self.clusters:
+            l.append([])
+            for i in c:
+                l[-1].append(self.data[i])
+        return l
+
+    def draw_clusters(self):
+        pass
+
+
+class ModelDBSCAN:
+    def __init__(self, data, epsilon):
+        self.data = data
+        self.epsilon = epsilon
 
     def get_clusters(self):
         pass
@@ -74,6 +97,9 @@ class Game:
     def __init__(self, renderer):
         self.points = np.empty(shape=(1, 2))
         self.renderer = renderer
+        self.nr_of_turns = 0
+        self.clustering_algorithm = "xmeans"
+        self.end_game = False
 
     def start_game(self):
         self.renderer.draw_coordinate_system()
@@ -85,6 +111,7 @@ class Game:
             0, settings.window_width), random.randint(0, settings.window_height)
         self.add_point(randomX, randomY)
         self.renderer.draw_point(randomX, randomY, color="red")
+        self.nr_of_turns += 1
 
     def add_point(self, x, y):
         scaled_x = (x - settings.origin_x) / settings.scale
@@ -95,6 +122,14 @@ class Game:
         self.points = np.empty(shape=(1, 2))
         self.renderer.clear()
         self.renderer.draw_coordinate_system()
+
+    def change_model(self, model):
+        self.clustering_algorithm = model
+
+    def update_state(self):
+        if self.nr_of_turns == 20:
+            self.end_game = True
+        return self.end_game
 
 
 def main():
