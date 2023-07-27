@@ -6,6 +6,8 @@ import settings
 from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from pyclustering.cluster.xmeans import xmeans
 import tkinter.messagebox
+from sklearn.cluster import DBSCAN
+from pyclustering.cluster.gmeans import gmeans
 
 
 class ModelInterface:
@@ -17,16 +19,57 @@ class ModelInterface:
         raise NotImplementedError()
 
 
+class GMeansModel(ModelInterface):
+    def __init__(self):
+        self.clusters = None
+        self.initial_number_of_clusters = 1
+
+    def perform_clustering(self, data):
+        gmeans_instance = gmeans(data, k_init=self.initial_number_of_clusters).process()
+        self.clusters = gmeans_instance.get_clusters()
+
+    def change_parameters(self, **parameters):
+        self.initial_number_of_clusters = parameters['initial_number_of_clusters']
+
+    @property
+    def nr_of_clusters(self):
+        return len(self.clusters)
+
+class DbscanModel(ModelInterface):
+    def __init__(self):
+        self.clusters = None
+        self.epsilon = 0.5
+        self.min_samples = 5
+
+    def perform_clustering(self, data):
+        clustering = DBSCAN(eps=self.epsilon, min_samples=self.min_samples).fit(data)
+        labels = clustering.labels_
+        self.clusters = []
+        for i in set(labels) - {-1}:
+            self.clusters.append(data[labels == i])
+
+    def change_parameters(self, **parameters):
+        self.epsilon = parameters['epsilon']
+        self.min_samples = parameters['min_samples']
+
+    @property
+    def nr_of_clusters(self):
+        return len(self.clusters)
+
+
 class XMeansModel(ModelInterface):
     def __init__(self):
         self.clusters = None
+        self.initial_number_of_clusters = 1
 
     def perform_clustering(self, data):
-        initial_number_of_clusters = 1
-        initial_centers = kmeans_plusplus_initializer(data, initial_number_of_clusters).initialize()
+        initial_centers = kmeans_plusplus_initializer(data, self.initial_number_of_clusters).initialize()
         xmeans_instance = xmeans(data, initial_centers, 40)
         xmeans_instance.process()
         self.clusters = xmeans_instance.get_clusters()
+
+    def change_parameters(self, **parameters):
+        self.initial_number_of_clusters = parameters['initial_number_of_clusters']
 
     @property
     def nr_of_clusters(self):
@@ -48,15 +91,6 @@ class PointCounter:
         if nr_of_clusters == self.goal_nr:
             return True
         return False
-
-
-class ModelDBSCAN:
-    def __init__(self, data, epsilon):
-        self.data = data
-        self.epsilon = epsilon
-
-    def get_clusters(self):
-        pass
 
 
 class GameWindow:
@@ -82,6 +116,7 @@ class GameWindow:
 
         # Options in algorith menu
         algorithm_menu.add_radiobutton(label="X-Means")
+        algorithm_menu.add_radiobutton(label="G-Means")
         algorithm_menu.add_radiobutton(label="DBSCAN")
 
         # Create game options
@@ -135,14 +170,15 @@ class Game:
         self.renderer.draw_point(randomX, randomY, color="red")
 
         self.nr_of_turns += 1
-        if self.nr_of_turns > 20:
+        if self.nr_of_turns > 19:
             self.end_game()
 
     def end_game(self):
         self.ended = True
         model = XMeansModel()
         point_counter = PointCounter(model, self.goal_nr)
-        self.score = point_counter.count_score(self.points)
+        # points attribute was initialized with 'np.empty' which returns array with one random element.
+        self.score = point_counter.count_score(self.points[1:])
         if self.score:
             tkinter.messagebox.showinfo('Score', 'You have won')
         else:
