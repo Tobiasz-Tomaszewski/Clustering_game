@@ -32,3 +32,12 @@ def draw_coordinate_system(canvas, origin_x, origin_y, window_width, window_heig
 
 def draw_point(canvas, x, y, color):
     canvas.create_oval(x-2, y-2, x+2, y+2, width=0, fill=color)
+
+
+def organize_clusters(sample, clusters):
+    l_ = []
+    for c in clusters:
+        l_.append([])
+        for i in c:
+            l_[-1].append(sample[i])
+    return l_
