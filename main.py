@@ -8,6 +8,7 @@ from pyclustering.cluster.xmeans import xmeans
 import tkinter.messagebox
 from sklearn.cluster import DBSCAN
 from pyclustering.cluster.gmeans import gmeans
+from tkinter import IntVar
 
 
 class ModelInterface:
@@ -104,6 +105,7 @@ class GameWindow:
         self.canvas = tk.Canvas(self.root, width=settings.window_width,
                                 height=settings.window_height, bg="white")
         self.canvas.pack()
+        self.rvar = IntVar(self.root)
 
     def get_canvas(self):
         return self.canvas
@@ -118,9 +120,10 @@ class GameWindow:
         menu_bar.add_cascade(label="Algorithm", menu=algorithm_menu)
 
         # Options in algorith menu
-        algorithm_menu.add_radiobutton(label="X-Means")
-        algorithm_menu.add_radiobutton(label="G-Means")
-        algorithm_menu.add_radiobutton(label="DBSCAN")
+        self.rvar.set(0)
+        algorithm_menu.add_radiobutton(label="X-Means", var=self.rvar, value=0, command=game.change_model(XMeansModel()))
+        algorithm_menu.add_radiobutton(label="G-Means", var=self.rvar, value=1, command=game.change_model(GMeansModel()))
+        algorithm_menu.add_radiobutton(label="DBSCAN", var=self.rvar, value=2, command=game.change_model(DbscanModel()))
 
         # Create game options
         game_options = tk.Menu(menu_bar, tearoff=0)
@@ -197,8 +200,6 @@ class Game:
             tkinter.messagebox.showinfo('Score', 'You have won')
         else:
             tkinter.messagebox.showinfo('Score', 'You have lost')
-
-
 
     def add_point(self, x, y):
         scaled_x = (x - settings.origin_x) / settings.scale
