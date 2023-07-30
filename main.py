@@ -144,6 +144,17 @@ class Renderer:
     def draw_point(self, x, y, color):
         functions.draw_point(self.canvas, x, y, color=color)
 
+    def draw_clusters(self, clusters, colors):
+        self.clear()
+        self.draw_coordinate_system()
+        color_index = -1
+        for c in clusters:
+            color_index += 1
+            for point in c:
+                scaled_point_x = point[0] * settings.scale + settings.origin_x
+                scaled_point_y = -(point[1] * settings.scale) + settings.origin_y
+                self.draw_point(scaled_point_x, scaled_point_y, color=colors[color_index])
+
     def clear(self):
         self.canvas.delete("all")
 
@@ -181,22 +192,13 @@ class Game:
         point_counter = PointCounter(self.model, self.goal_nr)
         # points attribute was initialized with 'np.empty' which returns array with one random element.
         self.score = point_counter.count_score(self.points[1:])
-        self.draw_clusters(settings.tkinter_colors)
+        self.renderer.draw_clusters(self.model.clusters, settings.tkinter_colors)
         if self.score:
             tkinter.messagebox.showinfo('Score', 'You have won')
         else:
             tkinter.messagebox.showinfo('Score', 'You have lost')
 
-    def draw_clusters(self, colors):
-        self.renderer.clear()
-        self.renderer.draw_coordinate_system()
-        color_index = -1
-        for c in self.model.clusters:
-            color_index += 1
-            for point in c:
-                scaled_point_x = point[0] * settings.scale + settings.origin_x
-                scaled_point_y = -(point[1] * settings.scale) + settings.origin_y
-                self.renderer.draw_point(scaled_point_x, scaled_point_y, color=colors[color_index])
+
 
     def add_point(self, x, y):
         scaled_x = (x - settings.origin_x) / settings.scale
