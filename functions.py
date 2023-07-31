@@ -1,8 +1,3 @@
-import settings
-import numpy as np
-import random
-
-
 def draw_coordinate_system(canvas, origin_x, origin_y, window_width, window_height, scale):
     # Draw x and y axes
     canvas.create_line(0, origin_y, window_width,

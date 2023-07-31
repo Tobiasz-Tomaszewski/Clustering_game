@@ -16,7 +16,18 @@ class ModelInterface:
         raise NotImplementedError()
 
     @property
+    def parameters_info(self):
+        raise NotImplementedError()
+
+    @property
     def nr_of_clusters(self):
+        raise NotImplementedError()
+
+    @property
+    def model_info(self):
+        raise NotImplementedError()
+
+    def change_parameters(self):
         raise NotImplementedError()
 
 
@@ -36,6 +47,15 @@ class GMeansModel(ModelInterface):
     @property
     def nr_of_clusters(self):
         return len(self.clusters)
+
+    @property
+    def model_info(self):
+        info = [
+            {'name': 'G-Means',
+             'parameters': ['initial_number_of_clusters'],
+             'parameters conditions': [lambda x: x == int(x) and x > 0]}
+        ]
+        return info
 
 
 class DbscanModel(ModelInterface):
@@ -59,6 +79,15 @@ class DbscanModel(ModelInterface):
     def nr_of_clusters(self):
         return len(self.clusters)
 
+    @property
+    def model_info(self):
+        info = [
+            {'name': 'DBSCAN',
+             'parameters': ['epsilon', 'min_samples'],
+             'parameters conditions': [lambda x: x > 0, lambda x: x == int(x) and x > 0]}
+        ]
+        return info
+
 
 class XMeansModel(ModelInterface):
     def __init__(self):
@@ -79,6 +108,14 @@ class XMeansModel(ModelInterface):
     def nr_of_clusters(self):
         return len(self.clusters)
 
+    @property
+    def model_info(self):
+        info = [
+            {'name': 'X-Means',
+             'parameters': ['initial_number_of_clusters'],
+             'parameters conditions': [lambda x: x == int(x) and x > 0]}
+        ]
+        return info
 
 class PointCounter:
     def __init__(self, model, goal_nr):
@@ -110,6 +147,12 @@ class GameWindow:
     def get_canvas(self):
         return self.canvas
 
+    def create_diplay_setings(self):
+        pass
+
+    def create_game_parameters_settings(self):
+        pass
+
     def create_menu(self, game):
         # Create menu bar
         menu_bar = tk.Menu(self.root)
@@ -131,6 +174,7 @@ class GameWindow:
 
         # Options in option menu
         game_options.add_command(label="Reset Game", command=game.reset_game)
+        game_options.add_command(label="Change goal")
 
         return menu_bar
 
@@ -195,11 +239,20 @@ class Game:
         point_counter = PointCounter(self.model, self.goal_nr)
         # points attribute was initialized with 'np.empty' which returns array with one random element.
         self.score = point_counter.count_score(self.points[1:])
-        self.renderer.draw_clusters(self.model.clusters, settings.tkinter_colors)
+        self.renderer.draw_clusters(self.model.clusters, settings.supported_colors)
         if self.score:
             tkinter.messagebox.showinfo('Score', 'You have won')
         else:
-            tkinter.messagebox.showinfo('Score', 'You have lost')
+            if self.goal_nr == 1:
+                proper_form_goal = 'cluster'
+            else:
+                proper_form_goal = 'clusters'
+
+            if self.model.nr_of_clusters == 1:
+                proper_form_result = 'custer'
+            else:
+                proper_form_result = 'clusters'
+            tkinter.messagebox.showinfo('Score', f'You have lost. The goal was {self.goal_nr} {proper_form_goal}. End result is {self.model.nr_of_clusters} {proper_form_result}.')
 
     def add_point(self, x, y):
         scaled_x = (x - settings.origin_x) / settings.scale
