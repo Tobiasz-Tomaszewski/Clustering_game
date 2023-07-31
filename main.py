@@ -117,6 +117,7 @@ class XMeansModel(ModelInterface):
         ]
         return info
 
+
 class PointCounter:
     def __init__(self, model, goal_nr):
         self.model = model
@@ -153,6 +154,23 @@ class GameWindow:
     def create_game_parameters_settings(self):
         pass
 
+    def get_new_goal(self, new_goal, dialog, game):
+        if (float(new_goal) == int(new_goal)) and (int(new_goal) > 0):
+            game.change_goal(new_goal)
+            dialog.destroy()
+
+    def create_input_dialog_change_goal(self, game):
+        input_dialog = tk.Toplevel(self.root)
+        input_dialog.title(f"Change goal. Current goal: {game.goal_nr}")
+
+        label = tk.Label(input_dialog, text="Enter the new goal:")
+        label.pack()
+        input_entry = tk.Entry(input_dialog)
+        input_entry.pack()
+
+        ok_button = tk.Button(input_dialog, text="OK", command=lambda: self.get_new_goal(input_entry.get(), input_dialog, game))
+        ok_button.pack()
+
     def create_menu(self, game):
         # Create menu bar
         menu_bar = tk.Menu(self.root)
@@ -174,7 +192,7 @@ class GameWindow:
 
         # Options in option menu
         game_options.add_command(label="Reset Game", command=game.reset_game)
-        game_options.add_command(label="Change goal")
+        game_options.add_command(label="Change goal", command=lambda: self.create_input_dialog_change_goal(game))
 
         return menu_bar
 
@@ -270,6 +288,8 @@ class Game:
     def change_model(self, model):
         self.model = model
 
+    def change_goal(self, new_goal):
+        self.goal_nr = new_goal
 
 def main():
     window = GameWindow()
