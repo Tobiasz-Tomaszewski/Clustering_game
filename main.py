@@ -154,22 +154,32 @@ class GameWindow:
     def create_game_parameters_settings(self):
         pass
 
-    def get_new_goal(self, new_goal, dialog, game):
-        if (float(new_goal) == int(new_goal)) and (int(new_goal) > 0):
-            game.change_goal(new_goal)
-            dialog.destroy()
+    def get_new_goal(self, new_goal, game, dialog):
+        if new_goal.isdigit() and (int(new_goal) > 0) and (int(new_goal) < 21):
+            game.change_goal(int(new_goal))
+            dialog.withdraw()
+        else:
+            tk.messagebox.showerror("Error", "The goal should be a positive integer between 1 and 20.")
 
     def create_input_dialog_change_goal(self, game):
-        input_dialog = tk.Toplevel(self.root)
-        input_dialog.title(f"Change goal. Current goal: {game.goal_nr}")
+        if not hasattr(self, "_input_dialog"):
+            self._input_dialog = tk.Toplevel(self.root)
+            self._input_dialog.title(f"Change goal. Current goal: {game.goal_nr}")
 
-        label = tk.Label(input_dialog, text="Enter the new goal:")
-        label.pack()
-        input_entry = tk.Entry(input_dialog)
-        input_entry.pack()
+            label = tk.Label(self._input_dialog, text=f"Enter the new goal:")
+            label.pack()
+            input_entry = tk.Entry(self._input_dialog)
+            input_entry.pack()
 
-        ok_button = tk.Button(input_dialog, text="OK", command=lambda: self.get_new_goal(input_entry.get(), input_dialog, game))
-        ok_button.pack()
+            input_entry.insert(0, str(game.goal_nr))
+
+            ok_button = tk.Button(self._input_dialog, text="OK",
+                                  command=lambda: self.get_new_goal(input_entry.get(), game, self._input_dialog))
+            ok_button.pack()
+
+            self._input_dialog.protocol("WM_DELETE_WINDOW", lambda: self._input_dialog.withdraw())
+
+        self._input_dialog.deiconify()
 
     def create_menu(self, game):
         # Create menu bar
@@ -182,9 +192,9 @@ class GameWindow:
 
         # Options in algorith menu
         self.rvar.set(0)
-        algorithm_menu.add_radiobutton(label="X-Means", var=self.rvar, value=0, command=game.change_model(XMeansModel()))
-        algorithm_menu.add_radiobutton(label="G-Means", var=self.rvar, value=1, command=game.change_model(GMeansModel()))
-        algorithm_menu.add_radiobutton(label="DBSCAN", var=self.rvar, value=2, command=game.change_model(DbscanModel()))
+        algorithm_menu.add_radiobutton(label="X-Means", var=self.rvar, value=0, command=lambda: game.change_model(XMeansModel()))
+        algorithm_menu.add_radiobutton(label="G-Means", var=self.rvar, value=1, command=lambda: game.change_model(GMeansModel()))
+        algorithm_menu.add_radiobutton(label="DBSCAN", var=self.rvar, value=2, command=lambda: game.change_model(DbscanModel()))
 
         # Create game options
         game_options = tk.Menu(menu_bar, tearoff=0)
@@ -290,6 +300,7 @@ class Game:
 
     def change_goal(self, new_goal):
         self.goal_nr = new_goal
+
 
 def main():
     window = GameWindow()
