@@ -159,7 +159,8 @@ class GameWindow:
             game.change_goal(int(new_goal))
             dialog.withdraw()
         else:
-            tk.messagebox.showerror("Error", "The goal should be a positive integer between 1 and 20.")
+            functions.showerror("Error", "The goal should be a positive integer between 1 and 20.")
+
 
     def create_input_dialog_change_goal(self, game):
         if not hasattr(self, "_input_dialog"):

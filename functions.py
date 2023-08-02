@@ -1,3 +1,6 @@
+from tkinter.commondialog import Dialog
+
+
 def draw_coordinate_system(canvas, origin_x, origin_y, window_width, window_height, scale):
     # Draw x and y axes
     canvas.create_line(0, origin_y, window_width,
@@ -36,3 +39,32 @@ def organize_clusters(sample, clusters):
         for i in c:
             l_[-1].append(sample[i])
     return l_
+
+
+def _show(title=None, message=None, _icon=None, _type=None, **options):
+    if _icon and "icon" not in options:    options["icon"] = _icon
+    if _type and "type" not in options:    options["type"] = _type
+    if title:   options["title"] = title
+    if message: options["message"] = message
+    res = ModalMessage(**options).show()
+    # In some Tcl installations, yes/no is converted into a boolean.
+    if isinstance(res, bool):
+        if res:
+            return 'yes'
+        return 'no'
+    # In others we get a Tcl_Obj.
+    return str(res)
+
+
+class ModalMessage(Dialog):
+    "A message box"
+
+    command  = "tk_messageBox"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.grab_set()
+
+
+def showerror(title=None, message=None, **options):
+    "Show an error message"
+    return _show(title, message, 'error', 'ok', **options)
