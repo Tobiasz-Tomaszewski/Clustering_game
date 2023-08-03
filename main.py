@@ -9,6 +9,8 @@ import tkinter.messagebox
 from sklearn.cluster import DBSCAN
 from pyclustering.cluster.gmeans import gmeans
 from tkinter import IntVar
+from marshmallow import validates_schema
+from dataclasses import dataclass, field
 
 
 class ModelInterface:
@@ -23,46 +25,51 @@ class ModelInterface:
     def nr_of_clusters(self):
         raise NotImplementedError()
 
-    @property
-    def model_info(self):
+    def change_parameters(self):
         raise NotImplementedError()
 
-    def change_parameters(self):
+    def get_parameters(self):
         raise NotImplementedError()
 
 
 class GMeansModel(ModelInterface):
-    def __init__(self):
+    def __init__(self, GMeansSettings):
         self.clusters = None
-        self.initial_number_of_clusters = 1
+        self.initial_number_of_clusters = GMeansSettings.initial_number_of_clusters
 
     def perform_clustering(self, data):
         gmeans_instance = gmeans(data, k_init=self.initial_number_of_clusters).process()
         self.clusters = gmeans_instance.get_clusters()
         self.clusters = functions.organize_clusters(data, self.clusters)
 
-    def change_parameters(self, **parameters):
-        self.initial_number_of_clusters = parameters['initial_number_of_clusters']
-
     @property
     def nr_of_clusters(self):
         return len(self.clusters)
 
-    @property
-    def model_info(self):
-        info = [
-            {'name': 'G-Means',
-             'parameters': ['initial_number_of_clusters'],
-             'parameters conditions': [lambda x: x == int(x) and x > 0]}
-        ]
-        return info
+    def change_parameters(self, GMeansSettings):
+        self.initial_number_of_clusters = GMeansSettings.initial_number_of_clusters
+
+    def get_parameters(self):
+        return GMeansSettings(self.initial_number_of_clusters)
+
+
+@dataclass
+class GMeansSettings:
+    """Settings for the GMeans clustering model."""
+    initial_number_of_clusters: int = field(metadata=dict(
+        description="Initial number of clusters"))
+
+    @validates_schema
+    def validate(self, data, **_):
+        if not (data['initial_number_of_clusters'] > 0) and (data['initial_number_of_clusters'] < 21):
+            raise AssertionError('initial_number_of_clusters must be an integer, greater than 0 and lesser than 21.')
 
 
 class DbscanModel(ModelInterface):
-    def __init__(self):
+    def __init__(self, DbscanSettings):
         self.clusters = None
-        self.epsilon = 0.5
-        self.min_samples = 5
+        self.epsilon = DbscanSettings.epsilon
+        self.min_samples = DbscanSettings.min_samples
 
     def perform_clustering(self, data):
         clustering = DBSCAN(eps=self.epsilon, min_samples=self.min_samples).fit(data)
@@ -79,20 +86,34 @@ class DbscanModel(ModelInterface):
     def nr_of_clusters(self):
         return len(self.clusters)
 
-    @property
-    def model_info(self):
-        info = [
-            {'name': 'DBSCAN',
-             'parameters': ['epsilon', 'min_samples'],
-             'parameters conditions': [lambda x: x > 0, lambda x: x == int(x) and x > 0]}
-        ]
-        return info
+    def change_parameters(self, DnscanSettings):
+        self.epsilon = DbscanSettings.epsilon
+        self.min_samples = DbscanSettings.min_samples
+
+    def get_parameters(self):
+        return DbscanSettings(self.epsilon, self.min_samples)
+
+
+@dataclass
+class DbscanSettings:
+    """Settings for the Dbscan clustering model."""
+    epsilon: float = field(metadata=dict(
+        description="Epsilon"))
+    min_samples: int = field(metadata=dict(
+        description="The minimum number of points to be considered a cluster"))
+
+    @validates_schema
+    def validate(self, data, **_):
+        if not (data['epsilon'] > 0):
+            raise AssertionError('epsilon must be a number, greater than 0')
+        if not ((data['min_samples'] > 0) and (type(data['min_samples']) == int)):
+            raise AssertionError('min_samples must be an integer, greater than 0')
 
 
 class XMeansModel(ModelInterface):
-    def __init__(self):
+    def __init__(self, XMeansSettings):
         self.clusters = None
-        self.initial_number_of_clusters = 1
+        self.initial_number_of_clusters = XMeansSettings.initial_number_of_clusters
 
     def perform_clustering(self, data):
         initial_centers = kmeans_plusplus_initializer(data, self.initial_number_of_clusters).initialize()
@@ -101,21 +122,34 @@ class XMeansModel(ModelInterface):
         self.clusters = xmeans_instance.get_clusters()
         self.clusters = functions.organize_clusters(data, self.clusters)
 
-    def change_parameters(self, **parameters):
-        self.initial_number_of_clusters = parameters['initial_number_of_clusters']
+    def update_parameters(self, XMeansSettings):
+        self.initial_number_of_clusters = XMeansSettings.initial_number_of_clusters
 
     @property
     def nr_of_clusters(self):
         return len(self.clusters)
 
-    @property
-    def model_info(self):
-        info = [
-            {'name': 'X-Means',
-             'parameters': ['initial_number_of_clusters'],
-             'parameters conditions': [lambda x: x == int(x) and x > 0]}
-        ]
-        return info
+    def change_parameters(self, XMeansSettings):
+        self.initial_number_of_clusters = XMeansSettings.initial_number_of_clusters
+
+    def get_parameters(self):
+        return XMeansSettings(self.initial_number_of_clusters)
+
+
+@dataclass
+class XMeansSettings:
+    """Settings for the XMeans clustering model."""
+    initial_number_of_clusters: int = field(metadata=dict(
+        description="Initial number of clusters"))
+
+    @validates_schema
+    def validate(self, data, **_):
+        if not (data['initial_number_of_clusters'] > 0) and (data['initial_number_of_clusters'] < 21):
+            raise AssertionError('initial_number_of_clusters must be an integer, greater than 0 and lesser than 21.')
+
+
+class ModelSettingsHandler:
+    pass
 
 
 class PointCounter:
@@ -159,7 +193,7 @@ class GameWindow:
             game.change_goal(int(new_goal))
             dialog.withdraw()
         else:
-            functions.showerror("Error", "The goal should be a positive integer between 1 and 20.")
+            functions.show_modal_error("Error", "The goal should be a positive integer between 1 and 20.")
 
 
     def create_input_dialog_change_goal(self, game):
@@ -204,6 +238,13 @@ class GameWindow:
         # Options in option menu
         game_options.add_command(label="Reset Game", command=game.reset_game)
         game_options.add_command(label="Change goal", command=lambda: self.create_input_dialog_change_goal(game))
+
+        # Create parameters menu
+        parameters_menu = tk.Menu(game_options, tearoff=0)
+        game_options.add_cascade(label="Change parameters", menu=parameters_menu)
+        parameters_menu.add_command(label="Change Xmeans parameters")
+        parameters_menu.add_command(label="Change Gmenas parameters")
+        parameters_menu.add_command(label="Change DBSCAN parameters")
 
         return menu_bar
 

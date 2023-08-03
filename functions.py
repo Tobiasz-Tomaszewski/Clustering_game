@@ -1,4 +1,6 @@
 from tkinter.commondialog import Dialog
+import tkinter as tk
+from tkinter import messagebox
 
 
 def draw_coordinate_system(canvas, origin_x, origin_y, window_width, window_height, scale):
@@ -41,30 +43,24 @@ def organize_clusters(sample, clusters):
     return l_
 
 
-def _show(title=None, message=None, _icon=None, _type=None, **options):
-    if _icon and "icon" not in options:    options["icon"] = _icon
-    if _type and "type" not in options:    options["type"] = _type
-    if title:   options["title"] = title
-    if message: options["message"] = message
-    res = ModalMessage(**options).show()
-    # In some Tcl installations, yes/no is converted into a boolean.
-    if isinstance(res, bool):
-        if res:
-            return 'yes'
-        return 'no'
-    # In others we get a Tcl_Obj.
-    return str(res)
+def show_modal_error(title, message):
+    # Create a new Toplevel window
+    error_window = tk.Toplevel()
+    error_window.title(title)
 
+    # Set the window as modal
+    error_window.grab_set()
 
-class ModalMessage(Dialog):
-    "A message box"
+    # Make the window resizable (optional)
+    error_window.resizable(False, False)
 
-    command  = "tk_messageBox"
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.grab_set()
+    # Add a label with the error message
+    error_label = tk.Label(error_window, text=message, padx=20, pady=10)
+    error_label.pack()
 
+    # Add an 'OK' button to close the window
+    ok_button = tk.Button(error_window, text="OK", command=error_window.destroy)
+    ok_button.pack(pady=10)
 
-def showerror(title=None, message=None, **options):
-    "Show an error message"
-    return _show(title, message, 'error', 'ok', **options)
+    # Run the modal error window's main loop
+    error_window.mainloop()
