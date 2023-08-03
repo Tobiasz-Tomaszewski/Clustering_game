@@ -2,7 +2,7 @@ import tkinter as tk
 import numpy as np
 import functions
 import random
-import settings
+import settings_file
 from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from pyclustering.cluster.xmeans import xmeans
 import tkinter.messagebox
@@ -11,6 +11,10 @@ from pyclustering.cluster.gmeans import gmeans
 from tkinter import IntVar
 from marshmallow import validates_schema
 from dataclasses import dataclass, field
+import marshmallow_dataclass
+import json
+import warnings
+np.warnings = warnings
 
 
 class ModelInterface:
@@ -29,6 +33,10 @@ class ModelInterface:
         raise NotImplementedError()
 
     def get_parameters(self):
+        raise NotImplementedError()
+
+    @property
+    def name(self):
         raise NotImplementedError()
 
 
@@ -52,6 +60,10 @@ class GMeansModel(ModelInterface):
     def get_parameters(self):
         return GMeansSettings(self.initial_number_of_clusters)
 
+    @property
+    def name(self):
+        return 'gmeans'
+
 
 @dataclass
 class GMeansSettings:
@@ -63,6 +75,9 @@ class GMeansSettings:
     def validate(self, data, **_):
         if not (data['initial_number_of_clusters'] > 0) and (data['initial_number_of_clusters'] < 21):
             raise AssertionError('initial_number_of_clusters must be an integer, greater than 0 and lesser than 21.')
+
+
+GMeansSettingsSchema = marshmallow_dataclass.class_schema(GMeansSettings)()
 
 
 class DbscanModel(ModelInterface):
@@ -86,12 +101,16 @@ class DbscanModel(ModelInterface):
     def nr_of_clusters(self):
         return len(self.clusters)
 
-    def change_parameters(self, DnscanSettings):
+    def change_parameters(self, DbscanSettings):
         self.epsilon = DbscanSettings.epsilon
         self.min_samples = DbscanSettings.min_samples
 
     def get_parameters(self):
         return DbscanSettings(self.epsilon, self.min_samples)
+
+    @property
+    def name(self):
+        return 'DBSCAN'
 
 
 @dataclass
@@ -110,13 +129,17 @@ class DbscanSettings:
             raise AssertionError('min_samples must be an integer, greater than 0')
 
 
+DbscanSettingsSchema = marshmallow_dataclass.class_schema(DbscanSettings)()
+
+
 class XMeansModel(ModelInterface):
     def __init__(self, XMeansSettings):
         self.clusters = None
         self.initial_number_of_clusters = XMeansSettings.initial_number_of_clusters
 
     def perform_clustering(self, data):
-        initial_centers = kmeans_plusplus_initializer(data, self.initial_number_of_clusters).initialize()
+        init = self.initial_number_of_clusters
+        initial_centers = kmeans_plusplus_initializer(data, init).initialize()
         xmeans_instance = xmeans(data, initial_centers, 40)
         xmeans_instance.process()
         self.clusters = xmeans_instance.get_clusters()
@@ -135,6 +158,10 @@ class XMeansModel(ModelInterface):
     def get_parameters(self):
         return XMeansSettings(self.initial_number_of_clusters)
 
+    @property
+    def name(self):
+        return 'xmeans'
+
 
 @dataclass
 class XMeansSettings:
@@ -148,8 +175,52 @@ class XMeansSettings:
             raise AssertionError('initial_number_of_clusters must be an integer, greater than 0 and lesser than 21.')
 
 
+XMeansSettingsSchema = marshmallow_dataclass.class_schema(XMeansSettings)()
+
+
 class ModelSettingsHandler:
-    pass
+    def __init__(self, game):
+        self.model = game.model
+        self.settings = self.model.get_parameters()
+        self.SettingsSchema = None
+
+    def change_settings(self, game):
+        if game.model.name == 'xmeans':
+            self.SettingsSchema = XMeansSettingsSchema
+        if game.model.name == 'gmeans':
+            self.SettingsSchema = GMeansSettingsSchema
+        if game.model.name == 'DBSCAN':
+            self.SettingsSchema = DbscanSettingsSchema
+        import tempfile
+        tmpFilePath = None
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmpFilePath = tmp.name
+            serialized = self.SettingsSchema.dumps(game.get_settings, indent=2)
+            tmp.write(serialized.encode('utf-8'))
+
+        import os
+        global settings_loaded_succesfully
+        settings_loaded_succesfully = False
+
+        def load_settings():
+            global settings_loaded_succesfully
+            while not settings_loaded_succesfully:
+                global settings
+                try:
+                    os.system(f"notepad {tmpFilePath}")
+
+                    with open(tmpFilePath) as tmp:
+                        jsonObj = json.load(tmp)
+                        settings = self.SettingsSchema.load(jsonObj)
+                        settings_loaded_succesfully = True
+                except Exception as ex:
+                    print(ex)
+                    load_settings()
+
+        load_settings()
+
+        os.remove(tmpFilePath)
+        game.change_settings(settings)
 
 
 class PointCounter:
@@ -171,30 +242,25 @@ class PointCounter:
 
 class GameWindow:
     def __init__(self):
+        self._input_dialog = None
         self.root = tk.Tk()
         self.root.title("Clustering Game")
-        self.root.geometry(f"{settings.window_width}x{settings.window_height}")
-        self.canvas = tk.Canvas(self.root, width=settings.window_width,
-                                height=settings.window_height, bg="white")
+        self.root.geometry(f"{settings_file.window_width}x{settings_file.window_height}")
+        self.canvas = tk.Canvas(self.root, width=settings_file.window_width,
+                                height=settings_file.window_height, bg="white")
         self.canvas.pack()
         self.rvar = IntVar(self.root)
 
     def get_canvas(self):
         return self.canvas
 
-    def create_diplay_setings(self):
-        pass
-
-    def create_game_parameters_settings(self):
-        pass
-
-    def get_new_goal(self, new_goal, game, dialog):
+    @staticmethod
+    def get_new_goal(new_goal, game, dialog):
         if new_goal.isdigit() and (int(new_goal) > 0) and (int(new_goal) < 21):
             game.change_goal(int(new_goal))
             dialog.withdraw()
         else:
             functions.show_modal_error("Error", "The goal should be a positive integer between 1 and 20.")
-
 
     def create_input_dialog_change_goal(self, game):
         if not hasattr(self, "_input_dialog"):
@@ -216,7 +282,7 @@ class GameWindow:
 
         self._input_dialog.deiconify()
 
-    def create_menu(self, game):
+    def create_menu(self, game, settings_handler):
         # Create menu bar
         menu_bar = tk.Menu(self.root)
         self.root.config(menu=menu_bar)
@@ -227,9 +293,12 @@ class GameWindow:
 
         # Options in algorith menu
         self.rvar.set(0)
-        algorithm_menu.add_radiobutton(label="X-Means", var=self.rvar, value=0, command=lambda: game.change_model(XMeansModel()))
-        algorithm_menu.add_radiobutton(label="G-Means", var=self.rvar, value=1, command=lambda: game.change_model(GMeansModel()))
-        algorithm_menu.add_radiobutton(label="DBSCAN", var=self.rvar, value=2, command=lambda: game.change_model(DbscanModel()))
+        algorithm_menu.add_radiobutton(label="X-Means", var=self.rvar, value=0, command=lambda: game.change_model(
+            XMeansModel(XMeansSettings(1))))
+        algorithm_menu.add_radiobutton(label="G-Means", var=self.rvar, value=1, command=lambda: game.change_model(
+            GMeansModel(GMeansSettings(1))))
+        algorithm_menu.add_radiobutton(label="DBSCAN", var=self.rvar, value=2, command=lambda: game.change_model(
+            DbscanModel(DbscanSettings(0.5, 5))))
 
         # Create game options
         game_options = tk.Menu(menu_bar, tearoff=0)
@@ -240,11 +309,7 @@ class GameWindow:
         game_options.add_command(label="Change goal", command=lambda: self.create_input_dialog_change_goal(game))
 
         # Create parameters menu
-        parameters_menu = tk.Menu(game_options, tearoff=0)
-        game_options.add_cascade(label="Change parameters", menu=parameters_menu)
-        parameters_menu.add_command(label="Change Xmeans parameters")
-        parameters_menu.add_command(label="Change Gmenas parameters")
-        parameters_menu.add_command(label="Change DBSCAN parameters")
+        game_options.add_command(label="Change parameters", command=lambda: settings_handler.change_settings(game))
 
         return menu_bar
 
@@ -255,8 +320,8 @@ class Renderer:
         self.canvas = canvas
 
     def draw_coordinate_system(self):
-        functions.draw_coordinate_system(self.canvas, settings.origin_x, settings.origin_y,
-                                         settings.window_width, settings.window_height, settings.scale)
+        functions.draw_coordinate_system(self.canvas, settings_file.origin_x, settings_file.origin_y,
+                                         settings_file.window_width, settings_file.window_height, settings_file.scale)
 
     def draw_point(self, x, y, color):
         functions.draw_point(self.canvas, x, y, color=color)
@@ -268,8 +333,8 @@ class Renderer:
         for c in clusters:
             color_index += 1
             for point in c:
-                scaled_point_x = point[0] * settings.scale + settings.origin_x
-                scaled_point_y = -(point[1] * settings.scale) + settings.origin_y
+                scaled_point_x = point[0] * settings_file.scale + settings_file.origin_x
+                scaled_point_y = -(point[1] * settings_file.scale) + settings_file.origin_y
                 self.draw_point(scaled_point_x, scaled_point_y, color=colors[color_index])
 
     def clear(self):
@@ -281,7 +346,7 @@ class Game:
         self.points = np.empty(shape=(1, 2))
         self.renderer = renderer
         self.nr_of_turns = 0
-        self.model = XMeansModel()
+        self.model = XMeansModel(XMeansSettings(1))
         self.ended = False
         self.goal_nr = 2
         self.score = None
@@ -296,7 +361,7 @@ class Game:
         self.add_point(x, y)
         self.renderer.draw_point(x, y, color="black")
         randomX, randomY = random.randint(
-            0, settings.window_width), random.randint(0, settings.window_height)
+            0, settings_file.window_width), random.randint(0, settings_file.window_height)
         self.add_point(randomX, randomY)
         self.renderer.draw_point(randomX, randomY, color="red")
 
@@ -309,7 +374,7 @@ class Game:
         point_counter = PointCounter(self.model, self.goal_nr)
         # points attribute was initialized with 'np.empty' which returns array with one random element.
         self.score = point_counter.count_score(self.points[1:])
-        self.renderer.draw_clusters(self.model.clusters, settings.supported_colors)
+        self.renderer.draw_clusters(self.model.clusters, settings_file.supported_colors)
         if self.score:
             tkinter.messagebox.showinfo('Score', 'You have won')
         else:
@@ -325,8 +390,8 @@ class Game:
             tkinter.messagebox.showinfo('Score', f'You have lost. The goal was {self.goal_nr} {proper_form_goal}. End result is {self.model.nr_of_clusters} {proper_form_result}.')
 
     def add_point(self, x, y):
-        scaled_x = (x - settings.origin_x) / settings.scale
-        scaled_y = -(y - settings.origin_y) / settings.scale
+        scaled_x = (x - settings_file.origin_x) / settings_file.scale
+        scaled_y = -(y - settings_file.origin_y) / settings_file.scale
         self.points = np.vstack((self.points, np.array([scaled_x, scaled_y])))
 
     def reset_game(self):
@@ -343,6 +408,13 @@ class Game:
     def change_goal(self, new_goal):
         self.goal_nr = new_goal
 
+    def change_settings(self, settings):
+        self.model.change_parameters(settings)
+
+    @property
+    def get_settings(self):
+        return self.model.get_parameters()
+
 
 def main():
     window = GameWindow()
@@ -351,7 +423,7 @@ def main():
 
     renderer = Renderer(canvas)
     game = Game(renderer)
-
+    setting_handler = ModelSettingsHandler(game)
     # Bind the click event to the canvas
     def on_click(event):
         x, y = event.x, event.y
@@ -359,7 +431,7 @@ def main():
 
     canvas.bind("<Button-1>", on_click)
 
-    window.create_menu(game)
+    window.create_menu(game, setting_handler)
 
     game.start_game()
 
