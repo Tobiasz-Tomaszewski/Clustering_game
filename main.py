@@ -185,6 +185,8 @@ class ModelSettingsHandler:
         self.SettingsSchema = None
 
     def change_settings(self, game):
+        global stop_player_turn
+        stop_player_turn = True
         if game.model.name == 'xmeans':
             self.SettingsSchema = XMeansSettingsSchema
         if game.model.name == 'gmeans':
@@ -417,6 +419,8 @@ class Game:
 
 
 def main():
+    global stop_player_turn
+    stop_player_turn = False
     window = GameWindow()
 
     canvas = window.get_canvas()
@@ -427,7 +431,8 @@ def main():
     # Bind the click event to the canvas
     def on_click(event):
         x, y = event.x, event.y
-        game.player_turn(x, y)
+        if not stop_player_turn:
+            game.player_turn(x, y)
 
     canvas.bind("<Button-1>", on_click)
 
