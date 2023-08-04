@@ -261,7 +261,7 @@ class GameWindow:
             game.change_goal(int(new_goal))
             dialog.withdraw()
         else:
-            functions.show_modal_error("Error", "The goal should be a positive integer between 1 and 20.")
+            functions.show_modal_window("Error", "The goal should be a positive integer between 1 and 20.")
 
     def create_input_dialog_change_goal(self, game):
         if not hasattr(self, "_input_dialog"):
@@ -283,8 +283,9 @@ class GameWindow:
 
         self._input_dialog.deiconify()
 
-    def display_game_info(self, ingo_text):
-        pass
+
+    def display_game_info(self):
+        functions.show_modal_window("Game info", settings_file.game_info)
 
 
     def create_menu(self, game, settings_handler):
@@ -317,7 +318,7 @@ class GameWindow:
         game_options.add_command(label="Change parameters", command=lambda: settings_handler.change_settings(game))
 
         # Create info button
-        menu_bar.add_command(label="Game info")
+        menu_bar.add_command(label="Game info", command=self.display_game_info)
 
         return menu_bar
 
@@ -435,6 +436,7 @@ def main():
     game = Game(renderer)
     setting_handler = ModelSettingsHandler(game)
     # Bind the click event to the canvas
+
     def on_click(event):
         x, y = event.x, event.y
         if not stop_player_turn:
