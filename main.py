@@ -244,7 +244,6 @@ class PointCounter:
 
 class GameWindow:
     def __init__(self):
-        self._input_dialog = None
         self.root = tk.Tk()
         self.root.title("Clustering Game")
         self.root.geometry(f"{settings_file.window_width}x{settings_file.window_height}")
@@ -284,6 +283,10 @@ class GameWindow:
 
         self._input_dialog.deiconify()
 
+    def display_game_info(self, ingo_text):
+        pass
+
+
     def create_menu(self, game, settings_handler):
         # Create menu bar
         menu_bar = tk.Menu(self.root)
@@ -312,6 +315,9 @@ class GameWindow:
 
         # Create parameters menu
         game_options.add_command(label="Change parameters", command=lambda: settings_handler.change_settings(game))
+
+        # Create info button
+        menu_bar.add_command(label="Game info")
 
         return menu_bar
 
