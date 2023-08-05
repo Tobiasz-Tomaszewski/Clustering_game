@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 import marshmallow_dataclass
 import json
 import warnings
+import os
 np.warnings = warnings
 
 
@@ -200,9 +201,9 @@ class ModelSettingsHandler:
             serialized = self.SettingsSchema.dumps(game.get_settings, indent=2)
             tmp.write(serialized.encode('utf-8'))
 
-        import os
         global settings_loaded_succesfully
         settings_loaded_succesfully = False
+        stop_player_turn = False
 
         def load_settings():
             global settings_loaded_succesfully
