@@ -35,12 +35,7 @@ def draw_point(canvas, x, y, color):
 
 
 def organize_clusters(sample, clusters):
-    l_ = []
-    for c in clusters:
-        l_.append([])
-        for i in c:
-            l_[-1].append(sample[i])
-    return l_
+    return [[sample[i] for i in c] for c in clusters]
 
 
 def show_modal_window(title, message, is_error=True):

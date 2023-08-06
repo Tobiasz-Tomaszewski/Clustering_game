@@ -74,7 +74,7 @@ class GMeansSettings:
 
     @validates_schema
     def validate(self, data, **_):
-        if not (data['initial_number_of_clusters'] > 0) and (data['initial_number_of_clusters'] < 21):
+        if not ((data['initial_number_of_clusters'] > 0) and (data['initial_number_of_clusters'] < 21)):
             raise AssertionError('initial_number_of_clusters must be an integer, greater than 0 and lesser than 21.')
 
 
@@ -172,7 +172,7 @@ class XMeansSettings:
 
     @validates_schema
     def validate(self, data, **_):
-        if not (data['initial_number_of_clusters'] > 0) and (data['initial_number_of_clusters'] < 21):
+        if not ((data['initial_number_of_clusters'] > 0) and (data['initial_number_of_clusters'] < 21)):
             raise AssertionError('initial_number_of_clusters must be an integer, greater than 0 and lesser than 21.')
 
 
@@ -188,12 +188,10 @@ class ModelSettingsHandler:
     def change_settings(self, game):
         global stop_player_turn
         stop_player_turn = True
-        if game.model.name == 'xmeans':
-            self.SettingsSchema = XMeansSettingsSchema
-        if game.model.name == 'gmeans':
-            self.SettingsSchema = GMeansSettingsSchema
-        if game.model.name == 'DBSCAN':
-            self.SettingsSchema = DbscanSettingsSchema
+        model_to_schema = {'xmeans': XMeansSettingsSchema,
+                           'gmeans': GMeansSettingsSchema,
+                           'DBSCAN': DbscanSettingsSchema}
+        self.SettingsSchema = model_to_schema[game.model.name]
         import tempfile
         tmpFilePath = None
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -201,27 +199,20 @@ class ModelSettingsHandler:
             serialized = self.SettingsSchema.dumps(game.get_settings, indent=2)
             tmp.write(serialized.encode('utf-8'))
 
-        global settings_loaded_succesfully
-        settings_loaded_succesfully = False
+        global settings_loaded_successfully
+        settings_loaded_successfully = False
         stop_player_turn = False
 
-        def load_settings():
-            global settings_loaded_succesfully
-            while not settings_loaded_succesfully:
-                global settings
-                try:
-                    os.system(f"notepad {tmpFilePath}")
-
-                    with open(tmpFilePath) as tmp:
-                        jsonObj = json.load(tmp)
-                        settings = self.SettingsSchema.load(jsonObj)
-                        settings_loaded_succesfully = True
-                except Exception as ex:
-                    print(ex)
-                    load_settings()
-
-        load_settings()
-
+        while not settings_loaded_successfully:
+            global settings
+            try:
+                os.system(f"notepad {tmpFilePath}")
+                with open(tmpFilePath) as tmp:
+                    jsonObj = json.load(tmp)
+                    settings = self.SettingsSchema.load(jsonObj)
+                    settings_loaded_successfully = True
+            except Exception as ex:
+                print(ex)
         os.remove(tmpFilePath)
         game.change_settings(settings)
 
@@ -284,10 +275,9 @@ class GameWindow:
 
         self._input_dialog.deiconify()
 
-
-    def display_game_info(self):
+    @staticmethod
+    def display_game_info():
         functions.show_modal_window("Game info", settings_file.game_info)
-
 
     def create_menu(self, game, settings_handler):
         # Create menu bar
@@ -370,10 +360,10 @@ class Game:
 
         self.add_point(x, y)
         self.renderer.draw_point(x, y, color="black")
-        randomX, randomY = random.randint(
-            0, settings_file.window_width), random.randint(0, settings_file.window_height)
-        self.add_point(randomX, randomY)
-        self.renderer.draw_point(randomX, randomY, color="red")
+        random_x = random.randint(0, settings_file.window_width)
+        random_y = random.randint(0, settings_file.window_height)
+        self.add_point(random_x, random_y)
+        self.renderer.draw_point(random_x, random_y, color="red")
 
         self.nr_of_turns += 1
         if self.nr_of_turns > 19:
