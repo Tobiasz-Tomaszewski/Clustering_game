@@ -18,11 +18,9 @@ import os
 import datetime
 np.warnings = warnings
 
-
-global stop_all_events
-stop_all_events = False
 global now
 now = datetime.datetime.now()
+
 
 class ModelInterface:
     def perform_clustering(self, data):
@@ -191,8 +189,7 @@ class ModelSettingsHandler:
         self.settings = self.model.get_parameters()
         self.SettingsSchema = None
 
-    def change_settings(self, game, toggle_event_processing):
-        toggle_event_processing()
+    def change_settings(self, game):
         model_to_schema = {'xmeans': XMeansSettingsSchema,
                            'gmeans': GMeansSettingsSchema,
                            'DBSCAN': DbscanSettingsSchema}
@@ -215,7 +212,6 @@ class ModelSettingsHandler:
                     jsonObj = json.load(tmp)
                     settings = self.SettingsSchema.load(jsonObj)
                     settings_loaded_successfully = True
-                    toggle_event_processing()
                     global now
                     now = datetime.datetime.now()
 
@@ -265,6 +261,8 @@ class GameWindow:
 
     def create_input_dialog_change_goal(self, game):
         if not hasattr(self, "_input_dialog"):
+            global stop_all_events
+            stop_all_events = True
             self._input_dialog = tk.Toplevel(self.root)
             self._input_dialog.title(f"Change goal. Current goal: {game.goal_nr}")
 
@@ -282,12 +280,13 @@ class GameWindow:
             self._input_dialog.protocol("WM_DELETE_WINDOW", lambda: self._input_dialog.withdraw())
 
         self._input_dialog.deiconify()
+        stop_all_events = False
 
     @staticmethod
     def display_game_info():
         functions.show_modal_window("Game info", settings_file.game_info)
 
-    def create_menu(self, game, settings_handler, toggle_event_processing):
+    def create_menu(self, game, settings_handler):
         # Create menu bar
         menu_bar = tk.Menu(self.root)
         self.root.config(menu=menu_bar)
@@ -314,7 +313,7 @@ class GameWindow:
         game_options.add_command(label="Change goal", command=lambda: self.create_input_dialog_change_goal(game))
 
         # Create parameters menu
-        game_options.add_command(label="Change parameters", command=lambda: settings_handler.change_settings(game, toggle_event_processing))
+        game_options.add_command(label="Change parameters", command=lambda: settings_handler.change_settings(game))
 
         # Create info button
         menu_bar.add_command(label="Game info", command=self.display_game_info)
@@ -437,18 +436,13 @@ def main():
     # Bind the click event to the canvas
 
     def on_click(event):
-        if not stop_all_events:
-            x, y = event.x, event.y
-            game.player_turn(x, y)
+        x, y = event.x, event.y
+        game.player_turn(x, y)
 
     canvas.bind("<Button-1>", on_click)
 
-    def toggle_event_processing():
-        global stop_all_events
-        stop_all_events = not stop_all_events
 
-
-    window.create_menu(game, setting_handler, toggle_event_processing)
+    window.create_menu(game, setting_handler)
 
     game.start_game()
 
