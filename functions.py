@@ -1,6 +1,4 @@
-from tkinter.commondialog import Dialog
 import tkinter as tk
-from tkinter import messagebox
 
 
 def draw_coordinate_system(canvas, origin_x, origin_y, window_width, window_height, scale):
