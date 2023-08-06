@@ -15,11 +15,14 @@ import marshmallow_dataclass
 import json
 import warnings
 import os
+import datetime
 np.warnings = warnings
 
 
 global stop_all_events
 stop_all_events = False
+global now
+now = datetime.datetime.now()
 
 class ModelInterface:
     def perform_clustering(self, data):
@@ -213,10 +216,14 @@ class ModelSettingsHandler:
                     settings = self.SettingsSchema.load(jsonObj)
                     settings_loaded_successfully = True
                     toggle_event_processing()
+                    global now
+                    now = datetime.datetime.now()
+
             except Exception as ex:
                 print(ex)
         os.remove(tmpFilePath)
         game.change_settings(settings)
+
 
 class PointCounter:
     def __init__(self, model, goal_nr):
@@ -358,6 +365,9 @@ class Game:
     def player_turn(self, x, y):
         if self.ended:
             return
+        global now
+        if datetime.datetime.now() - now < datetime.timedelta(seconds=0.5):
+            return
 
         self.add_point(x, y)
         self.renderer.draw_point(x, y, color="black")
@@ -431,12 +441,10 @@ def main():
             x, y = event.x, event.y
             game.player_turn(x, y)
 
-
     canvas.bind("<Button-1>", on_click)
 
     def toggle_event_processing():
         global stop_all_events
-        print(stop_all_events)
         stop_all_events = not stop_all_events
 
 
